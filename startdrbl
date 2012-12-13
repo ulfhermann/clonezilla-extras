@@ -1,0 +1,6 @@
+#!/bin/sh
+
+ifdown eth0
+ifup eth0
+
+for a in ssh isc-dhcp-server tftpd-hpa portmap nfs-common nis nfs-kernel-server drbl-clients-nat aoetools; do /etc/init.d/$a start; done

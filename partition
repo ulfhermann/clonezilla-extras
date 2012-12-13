@@ -1,0 +1,45 @@
+#!/bin/sh
+disk=$1
+[ -z $disk ] && disk=/dev/sda
+size=`parted -s $disk unit GiB print | grep ^Disk | awk '{print $3}' | sed -e 's/\(\.[0-9]*\)\{0,1\}GiB//'`
+
+parted -s $disk mklabel msdos
+if [ "$size" -ge 60 ] ; then
+	parted -s $disk unit MiB mkpart primary linux-swap 1 2048
+	parted -s $disk unit GiB mkpart primary ext4 2 20
+	parted -s $disk unit GiB mkpart primary ext4 20 100%
+	mkswap ${disk}1
+	echo sixty ${size}G
+	exit 0
+elif [ "$size" -ge 20 ] ; then
+	parted -s $disk unit MiB mkpart primary linux-swap 1 1024
+	parted -s $disk unit GiB mkpart primary ext4 1 10
+	parted -s $disk unit GiB mkpart primary ext4 10 100%
+	mkswap ${disk}1
+	echo twenty ${size}G
+	exit 0
+elif [ "$size" -ge 7 ] ; then
+	parted -s $disk unit MiB mkpart primary linux-swap 1 512
+	parted -s $disk unit MiB mkpart primary ext4 512 5120
+	parted -s $disk unit MiB mkpart primary ext4 5120 100%
+	mkswap ${disk}1
+	echo seven ${size}G
+	exit 0
+elif [ "$size" -ge 4 ] ; then
+	parted -s $disk unit MiB mkpart primary linux-swap 1 32
+	parted -s $disk unit MiB mkpart primary ext4 32 3584
+	parted -s $disk unit MiB mkpart primary ext4 3584 100%
+	mkswap ${disk}1
+	echo four ${size}G
+	exit 0
+elif [ "$size" -ge 3 ] ; then
+	parted -s $disk unit MiB mkpart primary linux-swap 1 16
+	parted -s $disk unit MiB mkpart primary ext4 16 2688
+	parted -s $disk unit MiB mkpart primary ext4 2688 100%
+	mkswap ${disk}1
+	echo three ${size}G
+	exit 0
+else
+	echo small ${size}G
+	exit 1
+fi

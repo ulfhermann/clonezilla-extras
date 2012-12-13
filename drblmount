@@ -1,0 +1,16 @@
+#!/bin/sh
+
+mount -o rbind /dev /mnt/dev
+mount -o rbind /proc /mnt/proc
+mount -o rbind /sys /mnt/sys
+mount -t overlayfs -o upperdir=/lib/modules,lowerdir=/mnt/lib/modules overlayfs /mnt/lib/modules
+chroot /mnt sh -c "/usr/local/sbin/startdrbl; /bin/bash; /usr/local/sbin/stopdrbl"
+umount /mnt/proc/fs/nfsd
+umount /mnt/lib/modules
+umount /mnt/dev/pts
+umount /mnt/dev
+umount /mnt/proc
+umount /mnt/sys/fs/fuse/connections
+umount /mnt/sys/kernel/debug
+umount /mnt/sys/kernel/security
+umount /mnt/sys
