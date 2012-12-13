@@ -97,9 +97,8 @@ prepare() {
   # Try to force to remount /$LIVE_MEDIA as rw, since it's rw device, like USB disk, we can try to save clonezilla image.
   mount -o remount,rw /$LIVE_MEDIA
 
-  # TODO: we probably shouldn't tie this to a specific UUID...
-  mount /dev/disk/by-uuid/0ab36392-aa24-4574-a470-128844c76bfe /mnt
-  mount -o bind /mnt/partimag /home/partimag
+  mount `mount | grep $LIVE_MEDIA | awk '{print $1}' | sed -e 's/\(dev\/sd.\)1/\12/'` /mnt
+  mount -o bind /mnt/home/partimag /home/partimag
   
   # Prepare default ocsroot.
   if mkdir -p /$LIVE_MEDIA/$ocsroot 2>/dev/null; then

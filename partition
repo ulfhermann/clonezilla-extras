@@ -9,37 +9,37 @@ if [ "$size" -ge 60 ] ; then
 	parted -s $disk unit GiB mkpart primary ext4 2 20
 	parted -s $disk unit GiB mkpart primary ext4 20 100%
 	mkswap ${disk}1
-	echo sixty ${size}G
+	echo sixty ${size}GiB
 	exit 0
 elif [ "$size" -ge 20 ] ; then
 	parted -s $disk unit MiB mkpart primary linux-swap 1 1024
 	parted -s $disk unit GiB mkpart primary ext4 1 10
 	parted -s $disk unit GiB mkpart primary ext4 10 100%
 	mkswap ${disk}1
-	echo twenty ${size}G
+	echo twenty ${size}GiB
 	exit 0
 elif [ "$size" -ge 7 ] ; then
 	parted -s $disk unit MiB mkpart primary linux-swap 1 512
 	parted -s $disk unit MiB mkpart primary ext4 512 5120
 	parted -s $disk unit MiB mkpart primary ext4 5120 100%
 	mkswap ${disk}1
-	echo seven ${size}G
+	echo seven ${size}GiB
 	exit 0
 elif [ "$size" -ge 4 ] ; then
 	parted -s $disk unit MiB mkpart primary linux-swap 1 32
 	parted -s $disk unit MiB mkpart primary ext4 32 3584
 	parted -s $disk unit MiB mkpart primary ext4 3584 100%
 	mkswap ${disk}1
-	echo four ${size}G
+	echo four ${size}GiB
 	exit 0
 elif [ "$size" -ge 3 ] ; then
 	parted -s $disk unit MiB mkpart primary linux-swap 1 16
 	parted -s $disk unit MiB mkpart primary ext4 16 2688
 	parted -s $disk unit MiB mkpart primary ext4 2688 100%
 	mkswap ${disk}1
-	echo three ${size}G
+	echo three ${size}GiB
 	exit 0
 else
-	echo small ${size}G
+	echo small ${size}GiB
 	exit 1
 fi
