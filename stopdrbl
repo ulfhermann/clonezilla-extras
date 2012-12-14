@@ -1,5 +1,5 @@
 #!/bin/sh
-
+# TODO: ocsmgrd might still be running. We should stop it here
 for a in isc-dhcp-server tftpd-hpa portmap nis nfs-kernel-server drbl-clients-nat aoetools ssh nfs-common; do /etc/init.d/$a stop; done
 
 ifdown eth0
