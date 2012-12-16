@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author: Steven Shiau <steven _at_ nchc org tw>
+# Author: Steven Shiau <steven _at_ nchc org tw>, Ulf Hermann <ulf_hermann@gmx.net>
 # License: GPL
 
 # When this script is ready, you can run
@@ -19,43 +19,9 @@ DRBL_SCRIPT_PATH="${DRBL_SCRIPT_PATH:-/usr/share/drbl}"
 # load the setting for clonezilla live.
 [ -e /etc/ocs/ocs-live.conf ] && . /etc/ocs/ocs-live.conf
 
-# The above is almost necessary, it is recommended to include them in your own custom-ocs.
-# From here, you can write your own scripts.
-
-# Get the live media mount point.
-get_live_media_mnt_point
-
 # functions
 
 choose_mode() {
-  local TMP ocslivemode
-  TMP="$(mktemp /tmp/ocslivemode.XXXXXX)"
-
-  trap "[ -f "$TMP" ] && rm -f $TMP" HUP INT QUIT TERM EXIT
-  $DIA --backtitle "$msg_nchc_free_software_labs" --title  \
-  "$msg_start_clonezilla" --menu "$msg_start_clonezilla_or_enter_shell\n$msg_choose_mode:" \
-  0 0 0 $DIA_ESC \
-  "Start_Clonezilla_Live" "$msg_start_clonezilla_live" \
-  "Start_Clonezilla_SE" "$msg_start_clonezilla_se" \
-  "Enter_shell"      "$msg_enter_cml" \
-  2> $TMP
-  ocslivemode="$(cat $TMP)"
-  echo "ocslivemode is $ocslivemode"
-  [ -f "$TMP" ] && rm -f $TMP
-  
-  case "$ocslivemode" in
-    "Start_Clonezilla_Live") 
-      echo "Starting Clonezilla Live now..." ;;
-    "Start_Clonezilla_SE") 
-      echo "Starting Clonezilla SE in chrootnow..."
-      /mnt/drblmount
-      exit 1;;
-    "Enter_shell") exit 1 ;;
-  esac
-} # end of choose_mode
-
-
-choose_save_restore() {
   local TMP
   TMP="$(mktemp /tmp/ocssaverestore.XXXXXX)"
 
@@ -65,8 +31,10 @@ choose_save_restore() {
     $DIA --backtitle "$msg_nchc_free_software_labs" --title  \
     "Clonezilla: $msg_choose_mode" --menu "$msg_clonezilla_is_free_and_no_warranty\n$msg_overwrite_data_on_disk_when_restoring\n$msg_hint_multiple_choice_select_by_space\n$msg_choose_mode:" \
     0 0 0 \
-    "savedisk" "save_local_disk_as_image" \
-    "1-2-mdisks" "restore_image_to_local_disks" \
+    "save" "save local disk as image" \
+    "restore" "restore image to local disks" \
+    "server" "restore image to remote computers" \
+    "shell" "enter shell" \
     2> $TMP
     ocs_sr_type="$(cat $TMP)"
     if [ -z "$ocs_sr_type" ]; then
@@ -96,37 +64,12 @@ prepare() {
 
   # Try to force to remount /$LIVE_MEDIA as rw, since it's rw device, like USB disk, we can try to save clonezilla image.
   mount -o remount,rw /$LIVE_MEDIA
-
-  mount `mount | grep $LIVE_MEDIA | awk '{print $1}' | sed -e 's/\(dev\/sd.\)1/\12/'` /mnt
-  mount -o bind /mnt/home/partimag /home/partimag
-  
-  # Prepare default ocsroot.
-  if mkdir -p /$LIVE_MEDIA/$ocsroot 2>/dev/null; then
-    # If /$LIVE_MEDIA is writable, default to make $ocsroot link to /$LIVE_MEDIA/$ocsroot. This link file will be removed by prep-ocsroot if it need the mount point $ocsroot (dir).
-    # Remove the stale mountpoint if it's empty. This will avoid link twice: 
-    # If we run this later:
-    # ln -fs /live_media/home/partimag /home/partimag
-    # if the latter dir /home/partimag exists then link will create something like:
-    # ls -l /home/partimag/
-    # lrwxrwxrwx 1 root root 26 2007-12-13 23:29 partimag -> /live_media//home/partimag
-    # If we embedded the image in Clonezilla live, /$LIVE_MEDIA/$ocsroot will exist, so if we run "mkdir -p /$LIVE_MEDIA/$ocsroot", it will succeed, and this is what we want, too. Since later we will link /$LIVE_MEDIA/$ocsroot to $ocsroot.
-    [ -d "$ocsroot" -a -z "$(unalias ls &>/dev/null; ls $ocsroot/ 2>/dev/null)" ] && rmdir $ocsroot 
-    [ -L "$ocsroot" ] && rm -f $ocsroot 
-    mkdir -p "$(dirname $ocsroot)"
-    ln -fs /$LIVE_MEDIA/$ocsroot $ocsroot
-  else
-    # mkdir a mount point to be used later if it does not exist. Normally it will be created in /etc/ocs/ocs-live.d/S03prep-drbl-clonezilla, so here it's just a insurance.
-    [ ! -d "$ocsroot" ] && mkdir -p $ocsroot
-  fi
   
   ask_language_if_supported_with_bterm
   [ -z "$ocs_lang" ] && ocs_lang=en
   ask_and_load_lang_set $ocs_lang
 
   DIA="whiptail"
-  
-  # run the main program
-  [ "$ocs_live_batch" = "no" ] && choose_mode
 }
 
 ##################
@@ -134,13 +77,16 @@ prepare() {
 ##################
 
 prepare
-choose_save_restore
+choose_mode
+
+mount `mount | grep $LIVE_MEDIA | awk '{print $1}' | sed -e 's/\(dev\/sd.\)1/\12/'` /mnt
+mount -o bind /mnt/home/partimag /home/partimag
 
 case "$ocs_sr_type" in
-  "savedisk")
+  "save")
     ocs-sr -p true -b -sc -g auto -e1 auto -e2 -r -j2 -q2 savedisk "ask_user" "ask_user"
     ;;
-  "1-2-mdisks")
+  "restore")
     # To get $target_hd
     ocs_mode_prompt="1-2-mdisks"
     get_target_hd_name_from_local_machine "$msg_choose_the_disks_to_restore \n$msg_linux_disk_naming $msg_press_space_to_mark_selection" checklist
@@ -155,9 +101,20 @@ case "$ocs_sr_type" in
     done
     ocs-restore-mdisks -b -p "-c -p true -k -g auto -e1 auto -e2 -r -j2" "ask_user" "$good_disks"
     ;;
+  "server")
+    /mnt/drblmount
+    ;;
+  "shell")
+    /bin/bash
+    ;;
   *)
-    exit 2
+    echo "invalid choice"
     ;;
 esac
+
+umount /home/partimag
+umount /mnt
+
+exit 1
 
 
