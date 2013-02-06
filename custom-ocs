@@ -31,8 +31,9 @@ choose_mode() {
     $DIA --backtitle "$msg_nchc_free_software_labs" --title  \
     "Clonezilla: $msg_choose_mode" --menu "$msg_clonezilla_is_free_and_no_warranty\n$msg_overwrite_data_on_disk_when_restoring\n$msg_hint_multiple_choice_select_by_space\n$msg_choose_mode:" \
     0 0 0 \
+    "restore" "restore image to local disks, creating new partition table" \
     "save" "save local disk as image" \
-    "restore" "restore image to local disks" \
+    "proportional" "restore image to local disks, using original partition table" \
     "server" "restore image to remote computers" \
     "shell" "enter shell" \
     2> $TMP
@@ -100,6 +101,12 @@ case "$ocs_sr_type" in
       fi
     done
     ocs-restore-mdisks -b -p "-c -p true -k -g auto -e1 auto -e2 -r -j2" "ask_user" "$good_disks"
+    ;;
+  "proportional")
+    # To get $target_hd
+    ocs_mode_prompt="1-2-mdisks"
+    get_target_hd_name_from_local_machine "$msg_choose_the_disks_to_restore \n$msg_linux_disk_naming $msg_press_space_to_mark_selection" checklist
+    ocs-restore-mdisks -b -p "-c -p true -k1 -g auto -e1 auto -e2 -r -j2" "ask_user" "$target_hd"
     ;;
   "server")
     /mnt/drblmount
