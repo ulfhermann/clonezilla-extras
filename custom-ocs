@@ -80,7 +80,7 @@ prepare() {
 prepare
 choose_mode
 
-mount `mount | grep $LIVE_MEDIA | awk '{print $1}' | sed -e 's/\(dev\/sd.\)1/\12/'` /mnt
+mount `mount | grep $LIVE_MEDIA | awk '{print $1}' | sed -e 's/\(dev\/.d.\)1/\12/'` /mnt
 mount -o bind /mnt/home/partimag /home/partimag
 
 case "$ocs_sr_type" in
